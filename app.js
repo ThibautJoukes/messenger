@@ -13,7 +13,7 @@ app.use('/assets', express.static('assets'));
 
 app.get('/', function (req, res) {
     //   res.send('<h1>Hello world</h1>');
-    res.sendFile(__dirname + '/login.html');
+    res.sendFile(__dirname + '/index.html');
 });
 app.get('/chatroom', function (req, res) {
     //   res.send('<h1>Hello world</h1>');
