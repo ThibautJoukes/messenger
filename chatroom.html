@@ -31,7 +31,7 @@
             <div class="titel">
               <p>Users - Online</p>
             </div>
-            <div class="venster">
+            <div class="venster" id="userVenster">
               <div id="users">
 
               </div>
@@ -42,7 +42,7 @@
             <div class="titel">
               <p>Messages - in chat</p>
             </div>
-            <div class="venster">
+            <div class="venster" id="chatVenster">
               <div id="messages">
                 <!--Word telkens aangemaakt in javascript-->
 
@@ -50,7 +50,7 @@
             </div>
             <div id="messagedialog">
               <form action="" id="formSend">
-                <textarea id="m" autocomplete="off" placeholder="Type your message here..." col="10"></textarea>
+                <textarea id="m" autocomplete="off" placeholder="Type your message here..." col="10" onkeypress="EnterSend(event)"></textarea>
                 <input type="submit" value="Send" style="width: 20%;" />
               </form>
             </div>
@@ -96,19 +96,25 @@
           socket.emit('chat message', JSON.stringify(msg)); // Emits message to all users
           $('#m').val(''); // empty input textfield chatbox for user
         }
+
+        // scroll to bottom if needed
+        $("#chatVenster").animate({
+          scrollTop: $("#messages").height()
+        }, 1000);
+
         return false;
       });
 
       // new user joined
-      socket.on('userConnected', function(msg){
+      socket.on('userConnected', function (msg) {
         // TODO: haal nieuwe users op in database en voeg toe aan lijst
-        alert(msg);
+        // alert(msg);
       });
 
       // user disconnected
-      socket.on('disconnect', function(msg){
+      socket.on('disconnect', function (msg) {
         // TODO: check DB who disconnected
-        alert(msg);
+        // alert(msg);
       });
 
       // check for incoming messages, then append to the rest
@@ -116,19 +122,27 @@
         var retrievedMsg = JSON.parse(msg);
         var userIndex = allUsers.indexOf(retrievedMsg["nickName"]);
 
-        if(userIndex == -1){
+        if (userIndex == -1) {
           allUsers.push(retrievedMsg["nickName"]);
-          $("#users").append("<p class='msg'><span class='online_user'>" +retrievedMsg["nickName"] +
-          "</span></p>");
+          $("#users").append("<p class='msg'><span class='online_user'>" + retrievedMsg["nickName"] +
+            "</span></p>");
         }
 
         if (retrievedMsg["msg"] != "") {
           $('#messages').append("<p class='msg'><span class='msgname'>" + retrievedMsg["nickName"] +
             ": </span>   " + retrievedMsg["msg"] + "</p>");
         }
+
       });
 
     });
+
+    
+    function EnterSend(event){
+        if(event.keyCode == 13){
+          $('#formSend').submit();
+        }
+      }
   </script>
 
 </body>
