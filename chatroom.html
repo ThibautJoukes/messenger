@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!--
+    Because it hasn't been made before.
+
+    lel jke, topkek
+  -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta name="author" content="Thibaut Joukes" />
+  <meta name="description" content="This is a chat environment where you can chat with anyone.">
+  <base href="/" />
+  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet"> <!-- roboto font -->
+  <link rel="stylesheet" href="/css/stijl.css" type="text/css" />
+  <title>Chatroom</title>
+</head>
+
+<body>
+  <section>
+    <div class="container">
+      <div id="banner"></div>
+      <div id="inner">
+
+        <div id="base">
+          <!-- verzameling van users en messages -->
+          <div id="userleft">
+            <!-- Hier komen alle users -->
+            <div class="titel">
+              <p>Users - Online</p>
+            </div>
+            <div class="venster">
+              <div id="users">
+
+              </div>
+            </div>
+          </div>
+          <div id="chatright">
+            <!-- Hier komen alle berichten -->
+            <div class="titel">
+              <p>Messages - in chat</p>
+            </div>
+            <div class="venster">
+              <div id="messages">
+                <!--Word telkens aangemaakt in javascript-->
+
+              </div>
+            </div>
+            <div id="messagedialog">
+              <form action="" id="formSend">
+                <textarea id="m" autocomplete="off" placeholder="Type your message here..." col="10"></textarea>
+                <input type="submit" value="Send" style="width: 20%;" />
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="clearfix">&nbsp;</div>
+
+
+      </div>
+      <footer>
+        <div id="left">Thibaut Joukes</div>
+        <div id="middle">Copyright 2013-2017</div>
+        <div id="right">Read the Tos</div>
+      </footer>
+    </div>
+  </section>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+  <script>
+    $(function () {
+      // hold array with existing users
+      var allUsers = [];
+
+
+      // add user to online users list && to allUsers online array
+      $("#users").append("<p class='msg'><span class='online_user'>" + localStorage.getItem('nickname') +
+        "</span></p>");
+      allUsers.push(localStorage.getItem('nickname'));
+
+      // instantiate IO
+      var socket = io();
+
+      // When message send prevent form default actions
+      $('#formSend').submit(function (e) {
+        e.preventDefault(); // prevents page reloading
+        if ($("#m").val() != "") {
+          var msg = {
+            'nickName': localStorage.getItem('nickname'),
+            'msg': $('#m').val()
+          };
+          socket.emit('chat message', JSON.stringify(msg)); // Emits message to all users
+          $('#m').val(''); // empty input textfield chatbox for user
+        }
+        return false;
+      });
+
+      // new user joined
+      socket.on('userConnected', function(msg){
+        // TODO: haal nieuwe users op in database en voeg toe aan lijst
+        alert(msg);
+      });
+
+      // user disconnected
+      socket.on('disconnect', function(msg){
+        // TODO: check DB who disconnected
+        alert(msg);
+      });
+
+      // check for incoming messages, then append to the rest
+      socket.on('chat message', function (msg) {
+        var retrievedMsg = JSON.parse(msg);
+        var userIndex = allUsers.indexOf(retrievedMsg["nickName"]);
+
+        if(userIndex == -1){
+          allUsers.push(retrievedMsg["nickName"]);
+          $("#users").append("<p class='msg'><span class='online_user'>" +retrievedMsg["nickName"] +
+          "</span></p>");
+        }
+
+        if (retrievedMsg["msg"] != "") {
+          $('#messages').append("<p class='msg'><span class='msgname'>" + retrievedMsg["nickName"] +
+            ": </span>   " + retrievedMsg["msg"] + "</p>");
+        }
+      });
+
+    });
+  </script>
+
+</body>
+
+</html>
