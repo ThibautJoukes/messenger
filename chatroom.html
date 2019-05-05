@@ -14,6 +14,8 @@
   <meta name="description" content="This is a chat environment where you can chat with anyone.">
   <base href="/" />
   <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet"> <!-- roboto font -->
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+    integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
   <link rel="stylesheet" href="/css/stijl.css" type="text/css" />
   <title>Chatroom</title>
 </head>
@@ -49,8 +51,13 @@
               </div>
             </div>
             <div id="messagedialog">
+              <div id="chatOptions">
+                <span class="chatOption" onclick="document.getElementById('imgPicker').click()"><i
+                    class="fas fa-paperclip"></i></span>
+              </div>
               <form action="" id="formSend">
-                <textarea id="m" autocomplete="off" placeholder="Type your message here..." col="10" onkeypress="EnterSend(event)"></textarea>
+                <textarea id="m" autocomplete="off" placeholder="Type your message here..." col="10"
+                  onkeypress="EnterSend(event)"></textarea>
                 <input type="submit" value="Send" style="width: 20%;" />
               </form>
             </div>
@@ -69,18 +76,53 @@
     </div>
   </section>
 
+  <!-- uploading image form -->
+  <form method="post" enctype="multipart/form-data" id="fileForm" hidden="hidden">
+    <input type="file" id="imgPicker" name="file" accept=".jpg,.jpeg,.png,.svg,.gif">
+    <!-- <input type="submit" value="Upload File" name="submit" /> -->
+  </form>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
   <script>
     $(function () {
+
+      // ####################### TODO: change DB ##########################
       // hold array with existing users
       var allUsers = [];
-
 
       // add user to online users list && to allUsers online array
       $("#users").append("<p class='msg'><span class='online_user'>" + localStorage.getItem('nickname') +
         "</span></p>");
       allUsers.push(localStorage.getItem('nickname'));
+      // ####################### TODO: change DB ##########################
+
+      // Listeners
+      $('#imgPicker').change(function () {
+        $('#fileForm').submit();
+      });
+
+      // Picture is added
+      $('#fileForm').on('submit', function (event) {
+        event.preventDefault();
+        // $('#fileForm').ajaxSubmit({ url: '/upload', type: 'post' });
+        var dataFile = new FormData();
+        dataFile.append('file', $('#imgPicker')[0].files[0]);
+
+        $.ajax({
+          type: 'POST',
+          url: '/upload',
+          cache: false,
+          contentType: false,
+          processData: false,
+          data: dataFile,
+          success: function (msg) {
+            // add link to messages
+            $('#m').val(msg);
+          }
+        });
+
+      });
 
       // instantiate IO
       var socket = io();
@@ -88,12 +130,14 @@
       // When message send prevent form default actions
       $('#formSend').submit(function (e) {
         e.preventDefault(); // prevents page reloading
+
         if ($("#m").val() != "") {
           var msg = {
             'nickName': localStorage.getItem('nickname'),
             'msg': $('#m').val()
           };
           socket.emit('chat message', JSON.stringify(msg)); // Emits message to all users
+
           $('#m').val(''); // empty input textfield chatbox for user
         }
 
@@ -129,20 +173,32 @@
         }
 
         if (retrievedMsg["msg"] != "") {
-          $('#messages').append("<p class='msg'><span class='msgname'>" + retrievedMsg["nickName"] +
-            ": </span>   " + retrievedMsg["msg"] + "</p>");
+          // check if message is picture url
+          var msg = retrievedMsg["msg"];
+          if(checkURL(msg)){
+            $('#messages').append("<p class='msg'><span class='msgname'>" + retrievedMsg["nickName"] +
+            ": </span> <br /> <img src='"+msg+"' class='msgImage' /></p>");
+          }
+          else{
+            $('#messages').append("<p class='msg'><span class='msgname'>" + retrievedMsg["nickName"] +
+            ": </span>   " + msg + "</p>");
+          }
         }
 
       });
 
     });
 
-    
-    function EnterSend(event){
-        if(event.keyCode == 13){
-          $('#formSend').submit();
-        }
+
+    function EnterSend(event) {
+      if (event.keyCode == 13) {
+        $('#formSend').submit();
       }
+    }
+
+    function checkURL(url) {
+      return (url.match(/\.(jpeg|jpg|gif|png|svg)$/) != null);
+    }
   </script>
 
 </body>
