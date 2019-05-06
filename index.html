@@ -11,6 +11,7 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <meta name="author" content="Thibaut Joukes" />
   <meta name="description" content="This is a chat environment where you can chat with anyone.">
+  <link rel="icon" href="assets/favicon.png?1v1">
   <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet"> <!-- roboto font -->
   <script src="js/jquery-3.2.0.min.js"></script>
   <script src="js/main.js"></script>
@@ -104,7 +105,13 @@
   <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
   <script>
     $("#frmLogin").on("submit", function () {
-      localStorage.setItem('nickname', $('#nickname').val());
+      var userObj = {
+
+      }
+      var ID = Math.floor(Math.random() * 10000000);
+      userObj[ID] = $('#nickname').val();
+
+      localStorage.setItem('nickname', JSON.stringify(userObj));
     })
   </script>
 </body>

@@ -13,6 +13,7 @@
   <meta name="author" content="Thibaut Joukes" />
   <meta name="description" content="This is a chat environment where you can chat with anyone.">
   <base href="/" />
+  <link rel="icon" href="assets/favicon.png?1v1">
   <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet"> <!-- roboto font -->
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
     integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
@@ -87,14 +88,30 @@
   <script>
     $(function () {
 
-      // ####################### TODO: change DB ##########################
-      // hold array with existing users
-      var allUsers = [];
+      // instantiate IO
+      var socket = io();
 
-      // add user to online users list && to allUsers online array
-      $("#users").append("<p class='msg'><span class='online_user'>" + localStorage.getItem('nickname') +
-        "</span></p>");
-      allUsers.push(localStorage.getItem('nickname'));
+      // ####################### TODO: change DB ##########################
+
+      // hold array with existing users
+      var AllUsersList = {
+
+      };
+
+      // Get this User information
+      const userObj = JSON.parse(localStorage.getItem('nickname'));
+      const userObjKeys = Object.keys(userObj);
+      const userID = userObjKeys[0];
+      const userName = userObj[userID];
+
+      // emit New User to channel: userConnected
+      let userJSON = {
+        'Id': userID,
+        'Username': userName
+      };
+      // user gets added to allUser array on userconnected channel
+      socket.emit('userConnected', JSON.stringify(userJSON));
+
       // ####################### TODO: change DB ##########################
 
       // Listeners
@@ -124,17 +141,15 @@
 
       });
 
-      // instantiate IO
-      var socket = io();
-
       // When message send prevent form default actions
       $('#formSend').submit(function (e) {
         e.preventDefault(); // prevents page reloading
 
         if ($("#m").val() != "") {
           var msg = {
-            'nickName': localStorage.getItem('nickname'),
-            'msg': $('#m').val()
+            'Id': userID,
+            'Username': userName,
+            'Message': $('#m').val()
           };
           socket.emit('chat message', JSON.stringify(msg)); // Emits message to all users
 
@@ -150,9 +165,17 @@
       });
 
       // new user joined
-      socket.on('userConnected', function (msg) {
+      socket.on('userConnected', function (user) {
         // TODO: haal nieuwe users op in database en voeg toe aan lijst
-        // alert(msg);
+        let userObj = JSON.parse(user);
+
+        if (!UserExists(userObj)) {
+          addUser(userObj['Id'], userObj['Username']);
+
+          $("#users").append("<p class='msg'><span class='online_user' id='" + userObj["Id"] + "'>" + userObj[
+              "Username"] +
+            "</span></p>");
+        }
       });
 
       // user disconnected
@@ -162,37 +185,53 @@
       });
 
       // check for incoming messages, then append to the rest
-      socket.on('chat message', function (msg) {
-        var retrievedMsg = JSON.parse(msg);
-        var userIndex = allUsers.indexOf(retrievedMsg["nickName"]);
+      socket.on('chat message', function (user) {
+        let userObj = JSON.parse(user);
 
-        if (userIndex == -1) {
-          allUsers.push(retrievedMsg["nickName"]);
-          $("#users").append("<p class='msg'><span class='online_user'>" + retrievedMsg["nickName"] +
+        // check if user already exists
+        if (!UserExists(userObj)) {
+          addUser(userObj["Id"], userObj["Username"]);
+          $("#users").append("<p class='msg'><span class='online_user' id='" + userID + "'>" + userObj[
+              "Username"] +
             "</span></p>");
         }
 
-        if (retrievedMsg["msg"] != "") {
+        if (userObj["Message"] != "") {
           // check if message is picture url
-          var msg = retrievedMsg["msg"];
-          if(checkURL(msg)){
-            $('#messages').append("<p class='msg'><span class='msgname'>" + retrievedMsg["nickName"] +
-            ": </span> <br /> <img src='"+msg+"' class='msgImage' /></p>");
-          }
-          else{
-            $('#messages').append("<p class='msg'><span class='msgname'>" + retrievedMsg["nickName"] +
-            ": </span>   " + msg + "</p>");
+          var msg = userObj["Message"];
+          if (checkURL(msg)) {
+            $('#messages').append("<p class='msg'><span class='msgname'>" + userObj["Username"] +
+              ": </span> <br /> <img src='" + msg + "' class='msgImage' /></p>");
+          } else {
+            $('#messages').append("<p class='msg'><span class='msgname'>" + userObj["Username"] +
+              ": </span>   " + msg + "</p>");
           }
         }
 
       });
 
-    });
+      function UserExists(userObj) {
+        let userExists = false;
+        Object.keys(AllUsersList).forEach(function (key) {
+          if (AllUsersList[key] == userObj["Username"]) {
+            userExists = true;
+          }
+        });
 
+        return userExists;
+      }
+
+      function addUser(userId, userName) {
+        AllUsersList[userId] = userName;
+        console.log(AllUsersList);
+      }
+
+    });
 
     function EnterSend(event) {
       if (event.keyCode == 13) {
         $('#formSend').submit();
+        $('#m').val('');
       }
     }
 

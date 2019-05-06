@@ -78,8 +78,10 @@ app.post('/upload', upload.single('file'), function (req, res, next) {
 io.on('connection', function (socket) {
     //user connects
     console.log('a user connected');
-    // emit that new user has been connected
-    io.emit('userConnected', "User joined!");
+
+    socket.on('userConnected', function(userName){
+        io.emit('userConnected', userName);
+    });
 
     // chat message received
     socket.on('chat message', function (msg) {
