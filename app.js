@@ -4,7 +4,14 @@ var fs = require('fs');
 var request = require('request');
 var bodyParser = require('body-parser');
 var upload = multer({
-    dest: 'uploads/'
+    dest: 'uploads/',
+    fileFilter: function (req, file, cb) {
+        if (file.mimetype !== 'image/png' && file.mimetype !== 'image/PNG' && file.mimetype !== 'image/jpg' && file.mimetype !== 'image/jpeg' && file.mimetype !== 'image/gif') {
+            req.fileValidationError = 'goes wrong on the mimetype';
+            return cb(null, false, new Error('goes wrong on the mimetype'));
+        }
+        cb(null, true);
+    }
 })
 var app = express();
 
@@ -27,17 +34,17 @@ app.get('/', function (req, res) {
 app.get('/chatroom', function (req, res) {
     //   res.send('<h1>Hello world</h1>');
     res.sendFile(__dirname + '/chatroom.html');
-}); 
+});
 
 
 app.post('/upload', upload.single('file'), function (req, res, next) {
 
     // check file of existence
     console.log(req);
-    
+
     const file = req.file;
-    if (!file) {
-        const error = new Error('Please upload a file');
+    if (!file || req.fileValidationError) {
+        const error = new Error('Please upload an image file.');
         error.httpStatusCode = 400;
         return next(error);
     }
@@ -79,8 +86,13 @@ io.on('connection', function (socket) {
     //user connects
     console.log('a user connected');
 
-    socket.on('userConnected', function(userName){
+    socket.on('userConnected', function (userName) {
         io.emit('userConnected', userName);
+    });
+
+    // when new users joins, every existing user send their profile to everyone
+    socket.on('userBroadcast', function (userName) {
+        io.emit('userBroadcast', userName);
     });
 
     // chat message received
@@ -89,11 +101,18 @@ io.on('connection', function (socket) {
         io.emit('chat message', msg);
     });
 
-    // user disconnects chat
+    // user disconnects chat (not used)
     socket.on('disconnect', function () {
         console.log('user disconnected');
-        io.emit('disconnect', "User disconnected!");
+        // not needed, window event already emits user profile to 'disconnect' channel in html
+        // io.emit('disconnect', "");        
     });
+
+    socket.on('user_leave', function (user) {
+        console.log('user disconnected');
+        io.emit('user_leave', user);        
+    });
+
 });
 
 

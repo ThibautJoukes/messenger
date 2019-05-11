@@ -87,9 +87,14 @@
   <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
   <script>
     $(function () {
-
       // instantiate IO
       var socket = io();
+
+      // user disconnected (closes tab)
+      window.onbeforeunload = function () {
+        socket.emit('disconnect', JSON.stringify(userJSON));
+      };
+
 
       // ####################### TODO: change DB ##########################
 
@@ -176,12 +181,36 @@
               "Username"] +
             "</span></p>");
         }
+
+        // send userObject again to this channel so every user (new) receives all logged in users
+        socket.emit('userBroadcast', JSON.stringify(userJSON));
       });
 
-      // user disconnected
-      socket.on('disconnect', function (msg) {
-        // TODO: check DB who disconnected
-        // alert(msg);
+      // reveives all users when new user joins and checks if exists
+      // when user does not exist, new user will be added to list
+      socket.on('userBroadcast', function (user) {
+        let userObj = JSON.parse(user);
+
+        if (!UserExists(userObj)) {
+          addUser(userObj['Id'], userObj['Username']);
+
+          $("#users").append("<p class='msg'><span class='online_user' id='" + userObj["Id"] + "'>" + userObj[
+              "Username"] +
+            "</span></p>");
+        }
+      });
+
+      socket.on('disconnect', function (user) {
+        // Check which user is disconnected
+        // let userObj = JSON.parse(user);
+        socket.emit('user_leave', user);
+      });
+
+      socket.on('user_leave', function (user) {
+        // Check which user is disconnected
+        var userObj = JSON.parse(user);
+        var userElem = document.getElementById(userObj.Id);
+        userElem.parentNode.removeChild(userElem);
       });
 
       // check for incoming messages, then append to the rest
@@ -207,13 +236,13 @@
               ": </span>   " + msg + "</p>");
           }
         }
-
       });
 
       function UserExists(userObj) {
         let userExists = false;
         Object.keys(AllUsersList).forEach(function (key) {
-          if (AllUsersList[key] == userObj["Username"]) {
+          // Checks if ID already exists
+          if (key == userObj["Id"]) {
             userExists = true;
           }
         });
