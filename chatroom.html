@@ -18,6 +18,30 @@
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
     integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
   <link rel="stylesheet" href="/css/stijl.css" type="text/css" />
+  <!-- Script that holds current user information + other users -->
+  <script>
+    // user disconnected (closes tab)
+    window.onbeforeunload = function () {
+      socket.emit('disconnect', JSON.stringify(userJSON));
+    };
+
+    // hold array with existing users
+    const AllUsersList = {
+
+    };
+
+    // Get this User information
+    const userObj = JSON.parse(localStorage.getItem('nickname'));
+    const userObjKeys = Object.keys(userObj);
+    const userID = userObjKeys[0];
+    const userName = userObj[userID];
+
+    // emit object user between channels
+    const userJSON = {
+      'Id': userID,
+      'Username': userName
+    };
+  </script>
   <title>Chatroom</title>
 </head>
 
@@ -90,47 +114,21 @@
       // instantiate IO
       var socket = io();
 
-      // user disconnected (closes tab)
-      window.onbeforeunload = function () {
-        socket.emit('disconnect', JSON.stringify(userJSON));
-      };
-
-
-      // ####################### TODO: change DB ##########################
-
-      // hold array with existing users
-      var AllUsersList = {
-
-      };
-
-      // Get this User information
-      const userObj = JSON.parse(localStorage.getItem('nickname'));
-      const userObjKeys = Object.keys(userObj);
-      const userID = userObjKeys[0];
-      const userName = userObj[userID];
-
-      // emit New User to channel: userConnected
-      let userJSON = {
-        'Id': userID,
-        'Username': userName
-      };
       // user gets added to allUser array on userconnected channel
       socket.emit('userConnected', JSON.stringify(userJSON));
 
-      // ####################### TODO: change DB ##########################
-
-      // Listeners
+      // When image is picked from file dialog.
       $('#imgPicker').change(function () {
         $('#fileForm').submit();
       });
 
-      // Picture is added
+      // When file form gets submit, stop defailt behaviour
       $('#fileForm').on('submit', function (event) {
         event.preventDefault();
-        // $('#fileForm').ajaxSubmit({ url: '/upload', type: 'post' });
+
         var dataFile = new FormData();
         dataFile.append('file', $('#imgPicker')[0].files[0]);
-
+        // send to express /upload route
         $.ajax({
           type: 'POST',
           url: '/upload',
@@ -139,14 +137,14 @@
           processData: false,
           data: dataFile,
           success: function (msg) {
-            // add link to messages
+            // msg: Link of image from imgur
             $('#m').val(msg);
           }
         });
 
       });
 
-      // When message send prevent form default actions
+      // When message is send, prevent default behaviour
       $('#formSend').submit(function (e) {
         e.preventDefault(); // prevents page reloading
 
@@ -156,9 +154,10 @@
             'Username': userName,
             'Message': $('#m').val()
           };
-          socket.emit('chat message', JSON.stringify(msg)); // Emits message to all users
-
-          $('#m').val(''); // empty input textfield chatbox for user
+          // Sends message over channel
+          socket.emit('chat message', JSON.stringify(msg));
+          //empty textarea
+          $('#m').val('');
         }
 
         // scroll to bottom if needed
@@ -259,8 +258,10 @@
 
     function EnterSend(event) {
       if (event.keyCode == 13) {
+        event.preventDefault();
         $('#formSend').submit();
         $('#m').val('');
+        return false;
       }
     }
 

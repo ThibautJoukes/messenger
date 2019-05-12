@@ -36,7 +36,7 @@ app.get('/chatroom', function (req, res) {
     res.sendFile(__dirname + '/chatroom.html');
 });
 
-
+// ROUTE when image is being uploaded.
 app.post('/upload', upload.single('file'), function (req, res, next) {
 
     // check file of existence
@@ -53,9 +53,7 @@ app.post('/upload', upload.single('file'), function (req, res, next) {
     var img = fs.readFileSync(req.file.path);
     var encode_image = img.toString('base64');
 
-
     // send to imgur api
-
     var options = {
         method: 'POST',
         url: 'https://api.imgur.com/3/upload',
